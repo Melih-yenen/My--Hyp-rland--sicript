@@ -227,29 +227,215 @@ cat > ~/.config/waybar/config.jsonc <<'EOF'
 {
   "layer": "top",
   "position": "top",
-  "height": 34,
-  "modules-left": ["hyprland/workspaces", "hyprland/window"],
-  "modules-center": ["clock"],
-  "modules-right": ["pulseaudio", "backlight", "battery", "network", "tray"],
+  "height": 30,
+  "modules-left": ["workspaces", "custom/network-selector"],
+  "modules-center": ["clock", "custom/weather"],
+  "modules-right": [
+    "cpu",
+    "memory",
+    "temperature",
+    "disk",
+    "pulseaudio",
+    "network",
+    "battery",
+    "tray",
+    "custom/playerctl",
+    "custom/power"
+  ],
 
-  "clock": { "format": " {:%H:%M}   {:%d.%m.%Y}" },
-  "battery": { "format": "{icon} {capacity}%", "format-icons": ["","","","",""] },
-  "backlight": { "format": " {percent}%" },
-  "pulseaudio": { "format": "{icon} {volume}%", "format-muted": " 0%", "format-icons": {"default":["",""]} },
-  "network": { "format-wifi": " {essid}", "format-ethernet": " {ifname}", "format-disconnected": "" }
+  "clock": {
+    "format": " {:%H:%M}   {:%d.%m.%Y}",
+    "tooltip-format": "{:%A, %d %B %Y}"
+  },
+
+  "cpu": {
+    "format": " {usage}%",
+    "tooltip": true
+  },
+
+  "memory": {
+    "format": " {used:0.1f}G/{total:0.1f}G",
+    "tooltip": true
+  },
+
+  "temperature": {
+    "critical-threshold": 80,
+    "format": " {temperatureC}°C"
+  },
+
+  "disk": {
+    "interval": 60,
+    "format": " {free}G"
+  },
+
+  "pulseaudio": {
+    "format": " {volume}%",
+    "format-muted": " muted",
+    "scroll-step": 5
+  },
+
+  "network": {
+    "format-wifi": " {essid} ({signalStrength}%)",
+    "format-ethernet": "󰈀 {ifname}",
+    "format-disconnected": " Bağlantı yok",
+    "tooltip": true
+  },
+
+  "battery": {
+    "format": "{icon} {capacity}%",
+    "format-icons": ["", "", "", "", ""],
+    "interval": 30
+  },
+
+  "tray": {
+    "spacing": 6
+  },
+
+  // 🌐 Ağ seçici (wofi + nmcli)
+  "custom/network-selector": {
+    "format": "",
+    "tooltip": "Ağ seçici",
+    "on-click": "nmcli device wifi rescan && nmcli device wifi list | wofi --dmenu | awk '{print $1}' | xargs -r -I{} nmcli device wifi connect {}",
+    "interval": 0
+  },
+
+  // 🌦️ Hava durumu (İstanbul)
+  "custom/weather": {
+    "format": " {}",
+    "interval": 600,
+    "exec": "curl -s 'wttr.in/Istanbul?format=1'",
+    "tooltip": "curl -s 'wttr.in/Istanbul?format=3'"
+  },
+
+  // 🎵 Müzik kontrolü
+  "custom/playerctl": {
+    "format": " {}",
+    "exec": "playerctl metadata --format '{{artist}} - {{title}}' | cut -c1-30",
+    "interval": 5,
+    "on-click": "playerctl play-pause",
+    "on-scroll-up": "playerctl next",
+    "on-scroll-down": "playerctl previous"
+  },
+
+  // ⏻ Güç menüsü
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": "Kapat / Yeniden Başlat / Çıkış",
+    "on-click": "wofi-power"
+  }
 }
+
 EOF
 
 cat > ~/.config/waybar/style.css <<'EOF'
-* { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 13px; }
-window#waybar {
-    background: rgba(46,52,64,0.95);
-    color: #eceff4;
-    border-bottom: 1px solid #3b4252;
+/* Global */
+* {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  border-radius: 10px;
+  padding: 2px 6px;
+  margin: 0 3px;
+  transition: background 0.2s, color 0.2s;
 }
-#workspaces button { padding: 0 8px; color: #88c0d0; }
-#workspaces button.focused { background-color: #81a1c1; border-radius: 10px; }
-#clock,#battery,#backlight,#pulseaudio,#network,#tray { padding: 0 10px; }
+
+/* Ana bar */
+window#waybar {
+  background: rgba(28, 28, 40, 0.92);
+  border: 2px solid #3b82f6;
+  color: rgba(255, 255, 255, 0.87);
+  padding: 2px 4px;
+}
+
+/* Workspace */
+#workspaces button {
+  background: transparent;
+  color: #888888;
+  border-radius: 8px;
+  padding: 0 8px;
+}
+
+#workspaces button.active {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+/* Saat */
+#clock {
+  background: rgba(60, 60, 80, 0.6);
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+/* Sağ modüller */
+#cpu, #memory, #temperature, #disk, #pulseaudio, #network,
+#battery, #backlight, #tray, #custom-weather, #custom-playerctl,
+#custom-power, #custom-network-selector {
+  background: rgba(60, 60, 80, 0.6);
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  margin: 0 3px;
+  padding: 2px 8px;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* Hover */
+#cpu:hover, #memory:hover, #temperature:hover, #disk:hover, #pulseaudio:hover,
+#network:hover, #battery:hover, #backlight:hover, #tray:hover,
+#custom-weather:hover, #custom-playerctl:hover, #custom-power:hover,
+#custom-network-selector:hover {
+  background: rgba(59, 130, 246, 0.4);
+  color: #ffffff;
+}
+
+/* Tooltip */
+.tooltip {
+  background: rgba(20, 20, 30, 0.9);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* Weather */
+#custom-weather {
+  background: #5e81ac;
+  color: #fff;
+  padding: 0 10px;
+  margin: 0 3px;
+  border-radius: 6px;
+}
+
+/* Playerctl */
+#custom-playerctl {
+  background: #a3be8c;
+  color: #2e3440;
+  padding: 0 10px;
+  margin: 0 3px;
+  border-radius: 6px;
+  min-width: 120px;
+}
+
+/* Power */
+#custom-power {
+  background: #bf616a;
+  color: #fff;
+  font-weight: bold;
+  padding: 0 10px;
+  margin: 0 3px;
+  border-radius: 6px;
+}
+
+/* Network selector */
+#custom-network-selector {
+  background: #89b4fa;
+  color: #1e1e2e;
+  font-weight: bold;
+  padding: 0 12px;
+  margin: 0 3px;
+  border-radius: 6px;
+}
+
 EOF
 
 # -------------------------------
