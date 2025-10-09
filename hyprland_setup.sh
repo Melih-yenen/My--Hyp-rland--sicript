@@ -1,41 +1,39 @@
 #!/bin/bash
 set -e
 
-echo "🔹 Hyprland + Waybar + Mako + Wofi full setup (modern, TR klavye, autostart) - CachyOS/NVIDIA"
+echo "🔹 Hyprland Full Setup v2 (Waybar + Mako + Wofi + Power Menu + TR Keyboard + NVIDIA)"
 
 # -------------------------------
-# Sistem paketleri
+# Gerekli Paketler
 # -------------------------------
-PKGS=(hyprland waybar mako wofi dolphin kitty brightnessctl pamixer ttf-jetbrains-mono-nerd nvidia nvidia-utils nvidia-settings egl-wayland)
+PKGS=(
+  hyprland waybar mako wofi dolphin kitty brightnessctl pamixer playerctl
+  ttf-jetbrains-mono-nerd nvidia nvidia-utils nvidia-settings egl-wayland
+  swww hyprlock power-profiles-daemon
+)
 
 for pkg in "${PKGS[@]}"; do
     if ! pacman -Qi "$pkg" &>/dev/null; then
-        echo "📦 $pkg yüklenecek..."
+        echo "📦 $pkg kuruluyor..."
         sudo pacman -S --noconfirm "$pkg"
     else
         echo "✔ $pkg zaten yüklü"
     fi
 done
 
-# -------------------------------
-# Bibata çakışması kontrolü
-# -------------------------------
+# Bibata çakışması
 if pacman -Qi bibata-cursor-theme-bin &>/dev/null; then
     echo "⚠ bibata-cursor-theme-bin bulundu, kaldırılıyor..."
     sudo pacman -R --noconfirm bibata-cursor-theme-bin
 fi
-
 if ! pacman -Qi bibata-cursor-theme &>/dev/null; then
-    echo "📦 bibata-cursor-theme kuruluyor..."
     yay -S --noconfirm bibata-cursor-theme
-else
-    echo "✔ bibata-cursor-theme zaten yüklü"
 fi
 
 # -------------------------------
-# Config dizinleri
+# Diziler
 # -------------------------------
-mkdir -p ~/.config/{hypr,waybar,mako,wofi,autostart}
+mkdir -p ~/.config/{hypr,waybar,mako,wofi,autostart,waybar/scripts,local/bin}
 
 # -------------------------------
 # Hyprland Config
@@ -55,7 +53,8 @@ input {
     touchpad {
         natural_scroll = yes
         tap-to-click = yes
-        middle_button_emulation = yes
+        scroll_factor = 0.6
+        drag_lock = yes
     }
 }
 
@@ -107,6 +106,9 @@ bind = SUPER, F, togglefloating,
 bind = SUPER, E, exec, dolphin
 bind = SUPER, V, exec, pavucontrol
 bind = SUPER, B, exec, firefox
+bind = SUPER, R, exec, hyprctl reload
+bind = SUPER, Escape, exec, hyprctl dispatch exit
+bind = SUPER, L, exec, ~/.local/bin/powermenu.sh
 
 bind = SUPER,1,workspace,1
 bind = SUPER,2,workspace,2
@@ -118,7 +120,40 @@ exec-once = hyprctl setcursor Bibata-Modern-Ice 24
 exec-once = brightnessctl set 50%
 exec-once = ~/.config/autostart/startup.sh
 exec-once = tlp start
+exec-once = powerprofilesctl set balanced
+exec-once = swww init && swww img ~/Resimler/wallpaper.jpg --transition-type fade
 EOF
+
+# -------------------------------
+# Power Menu Script
+# -------------------------------
+cat > ~/.local/bin/powermenu.sh <<'EOF'
+#!/bin/bash
+chosen=$(echo -e " Power Off\n Reboot\n Lock\n Logout" | wofi --dmenu --prompt "Power Menu")
+case "$chosen" in
+    " Power Off") systemctl poweroff ;;
+    " Reboot") systemctl reboot ;;
+    " Lock") hyprlock ;;
+    " Logout") hyprctl dispatch exit ;;
+esac
+EOF
+chmod +x ~/.local/bin/powermenu.sh
+
+# -------------------------------
+# Audio Animation Script
+# -------------------------------
+cat > ~/.config/waybar/scripts/audio-anim.sh <<'EOF'
+#!/bin/bash
+while true; do
+    if playerctl status 2>/dev/null | grep -q "Playing"; then
+        echo '{"text": "󰕾 ~~~", "tooltip": "Playing"}'
+    else
+        echo '{"text": "󰖁", "tooltip": "Muted"}'
+    fi
+    sleep 1
+done
+EOF
+chmod +x ~/.config/waybar/scripts/audio-anim.sh
 
 # -------------------------------
 # Mako Config
@@ -150,40 +185,6 @@ default-timeout=0
 EOF
 
 # -------------------------------
-# Mako Style (çalışır)
-# -------------------------------
-cat > ~/.config/mako/style.css <<'EOF'
-* {
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    font-size: 12px;
-}
-
-window {
-    background-color: rgba(46,52,64,0.95);
-    color: #eceff4;
-    border-radius: 14px;
-    border: 2px solid rgba(129,161,193,0.8);
-}
-
-#app-name {
-    color: #88c0d0;
-}
-
-#urgency {
-    background-color: #bf616a;
-    color: #eceff4;
-}
-
-#progress {
-    background-color: #88c0d0;
-}
-
-#icon {
-    max-size: 48px;
-}
-EOF
-
-# -------------------------------
 # Wofi Config
 # -------------------------------
 cat > ~/.config/wofi/config <<'EOF'
@@ -196,9 +197,6 @@ width=45%
 height=55%
 EOF
 
-# -------------------------------
-# Wofi Style (çalışır)
-# -------------------------------
 cat > ~/.config/wofi/style.css <<'EOF'
 window {
     font-family: "JetBrainsMono Nerd Font", monospace;
@@ -230,7 +228,14 @@ cat > ~/.config/waybar/config.jsonc <<'EOF'
   "height": 34,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": ["clock"],
-  "modules-right": ["pulseaudio", "backlight", "battery", "network", "tray"],
+  "modules-right": ["custom/audio", "pulseaudio", "backlight", "battery", "network", "tray"],
+
+  "custom/audio": {
+    "format": "{}",
+    "exec": "~/.config/waybar/scripts/audio-anim.sh",
+    "return-type": "json",
+    "interval": 1
+  },
 
   "clock": { "format": " {:%H:%M}   {:%d.%m.%Y}" },
   "battery": { "format": "{icon} {capacity}%", "format-icons": ["","","","",""] },
@@ -241,30 +246,31 @@ cat > ~/.config/waybar/config.jsonc <<'EOF'
 EOF
 
 cat > ~/.config/waybar/style.css <<'EOF'
-* { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 13px; }
+* {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+}
 window#waybar {
-    background: rgba(46,52,64,0.95);
-    color: #eceff4;
-    border-bottom: 1px solid #3b4252;
+  background: rgba(46,52,64,0.75);
+  backdrop-filter: blur(6px);
+  color: #eceff4;
+  border-bottom: 1px solid #3b4252;
+  transition: background 0.3s ease;
 }
 #workspaces button { padding: 0 8px; color: #88c0d0; }
-#workspaces button.focused { background-color: #81a1c1; border-radius: 10px; }
-#clock,#battery,#backlight,#pulseaudio,#network,#tray { padding: 0 10px; }
+#workspaces button.focused { background-color: #81a1c1; border-radius: 10px; color: #2e3440; }
+#clock,#battery,#backlight,#pulseaudio,#network,#tray,#custom-audio { padding: 0 10px; }
 EOF
 
 # -------------------------------
-# Autostart script
+# Autostart
 # -------------------------------
 cat > ~/.config/autostart/startup.sh <<'EOF'
 #!/bin/bash
-killall mako || true
-killall dunst || true
-killall xfce4-notifyd || true
-
+killall mako waybar dunst xfce4-notifyd || true
 mako &
 waybar &
 EOF
-
 chmod +x ~/.config/autostart/startup.sh
 
-echo "✅ Kurulum tamamlandı! Hyprland + Waybar + Mako + Wofi artık modern, TR klavye ve tamamen çalışır durumda."
+echo "✅ Hyprland Full Setup v2 tamamlandı! Yeniden oturum açarak keyfini çıkar hocam 🔥"
