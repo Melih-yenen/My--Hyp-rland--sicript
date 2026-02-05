@@ -1,69 +1,132 @@
-Hyprland Full Setup Script (CachyOS / NVIDIA)
+# My‑Hyprland‑Script
 
-This script installs and configures a complete Hyprland environment with Waybar, Mako, Wofi, and modern settings on a TR keyboard layout. It is designed for NVIDIA laptops on CachyOS/Arch Linux. It also includes autostart scripts, modern themes, and optional utilities like Dolphin and Kitty.
+## Overview
 
-Features
+**My‑Hyprland‑Script** is a structured and reproducible setup script designed to deploy a complete **Hyprland Wayland desktop environment** on **Arch‑based Linux distributions**. The project focuses on **stability, consistency, and NVIDIA compatibility**, while keeping the system clean and easy to maintain.
 
-Installs essential packages: Hyprland, Waybar, Mako, Wofi, Dolphin, Kitty, brightness and volume control utilities.
+This repository is intended for users who want a **ready‑to‑use Hyprland environment** without manually configuring every component from scratch.
 
-Resolves Bibata cursor theme conflicts automatically.
+---
 
-Sets  TR keyboard layout.
+## Target Platform
 
-Configures Hyprland with modern decoration, blur, shadows, and animations.
+* Arch Linux & Arch‑based distributions (tested on CachyOS)
+* NVIDIA GPUs (primary focus)
+* Wayland session
+* Users familiar with terminal‑based installation workflows
 
-Configures Mako notifications with a modern, clean style.
+> ⚠️ The script is optimized for NVIDIA systems. AMD/Intel users may need to adjust driver‑specific sections.
 
-Configures Wofi app launcher with modern CSS styling.
+---
 
-Configures Waybar with modern theme and modules (clock, battery, audio, network, tray).
+## Key Features
 
-Autostart script for launching Mako and Waybar.
+* Automated Hyprland installation and configuration
+* Preconfigured Waybar status bar
+* Wofi application launcher
+* Mako notification daemon
+* Terminal and file manager integration
+* Keyboard layout configuration (TR support)
+* Organized `~/.config` structure
+* Minimal, clean, and performance‑oriented setup
 
-Prepares directories if not exist, overwriting configs if they do.
+---
 
-Installation
-1.
-Download the script 
-2.
-Make it executable:chmod +x hyprland_setup.sh
-3.
-Run the script:./hyprland_setup.sh
-File Structure Created:
-~/.config/hypr/hyprland.conf         # Hyprland configuration
-~/.config/mako/config                # Mako notification config
-~/.config/mako/style.css             # Mako CSS styling
-~/.config/wofi/config                # Wofi launcher config
-~/.config/wofi/style.css             # Wofi CSS styling
-~/.config/waybar/config.jsonc        # Waybar config
-~/.config/waybar/style.css           # Waybar CSS
-~/.config/waybar/scripts/audio-anim.sh # Audio animation script (optional)
-~/.config/autostart/startup.sh       # Autostart script for Hyprland components
-Script Sections Explained 
+## Installation
 
-System Packages Installation
-Checks if the required packages are installed. Installs them if missing.
+Clone the repository and execute the setup script:
 
-Bibata Cursor Conflict Resolution
-Removes bibata-cursor-theme-bin if exists, and installs bibata-cursor-theme.
+```bash
+git clone https://github.com/Melih-yenen/My--Hyp-rland--sicript.git
+cd My--Hyp-rland--sicript
+chmod +x hyprland_setup.sh
+./hyprland_setup.sh
+```
 
-Config Directories Setup
-Creates ~/.config/hypr, ~/.config/waybar, ~/.config/mako, ~/.config/wofi, and ~/.config/autostart directories.
+The script will:
 
-Hyprland Config
-Sets monitor, environment variables, input settings (TR keyboard), window gaps, borders, layout, decoration (blur, shadow), animations, and keybindings.
+* Install required packages
+* Configure Hyprland and related components
+* Place configuration files in the appropriate directories
 
-Mako Config and CSS
-Sets fonts, colors, border, padding, margins, max visible notifications, and urgency styles.
+A system reboot is recommended after installation.
 
-Wofi Config and CSS
-Configures launcher mode, terminal, search prompt, size, and style.
+---
 
-Waybar Config and CSS
-Sets position, height, modules, and module formatting. Custom styles for workspaces, clock, battery, backlight, audio, network, and tray.
+## Components Installed
 
-Audio Animation Script
-Optional script to show audio playback animations in Waybar. (Make executable automatically.)
+The setup includes, but is not limited to:
 
-Autostart Script
-Kills any previous notification daemons and starts Mako and Waybar.
+* **Hyprland** – Wayland compositor
+* **Waybar** – Status bar
+* **Wofi** – Application launcher
+* **Mako** – Notification system
+* **Kitty** – Terminal emulator
+* **Dolphin** – File manager
+
+All components are configured to work together seamlessly.
+
+---
+
+## Repository Structure
+
+```
+My--Hyp-rland--sicript/
+├── hyprland_setup.sh   # Main installation script
+├── README.md           # Project documentation
+├── LICENSE             # GPL‑3.0 license
+└── config/             # Configuration files (if present)
+```
+
+---
+
+## Customization
+
+After installation, you can customize the environment by editing configuration files located in:
+
+```
+~/.config/hypr/
+~/.config/waybar/
+~/.config/wofi/
+~/.config/mako/
+```
+
+Hyprland allows extensive customization for keybindings, animations, window rules, and monitors.
+
+---
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0 (GPL‑3.0)**.
+
+You are free to use, modify, and distribute this project under the terms of the license.
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a new feature branch
+3. Commit your changes with clear messages
+4. Open a Pull Request
+
+Please ensure changes are consistent with the project’s goals and coding style.
+
+---
+
+## Author
+
+**Melih Yenen**
+GitHub: [https://github.com/Melih-yenen](https://github.com/Melih-yenen)
+
+---
+
+## Disclaimer
+
+This script modifies system configuration and installs packages automatically. Review the script before running it on a production system. Use at your own responsibility.
+
+---
+
+**Hyprland • Wayland • Clean • Minimal • Efficient**
