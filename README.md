@@ -10,7 +10,7 @@ This repository is intended for users who want a **ready‑to‑use Hyprland env
 
 ## Target Platform
 
-* Arch Linux & Arch‑based distributions (tested on CachyOS)
+* Arch Linux & Arch‑based fedora and ubuntu based distributions (tested on CachyOS)
 * NVIDIA GPUs (primary focus)
 * Wayland session
 * Users familiar with terminal‑based installation workflows
