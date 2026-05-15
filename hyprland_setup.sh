@@ -1,7 +1,7 @@
 #!/bin/bash
-# Hyprland Full Setup v10.1 (Melih Edition - Multi-Distro & Pure Global)
+# Hyprland Full Setup v11 (Melih Edition - Hardware Adaptive & Pure Global)
 # Developer: Melih Yenen (MelihOS) & AI Development Partner
-# Usage: chmod +x hypr_v10.sh && ./hypr_v10.sh
+# Usage: chmod +x hypr_v11.sh && ./hypr_v11.sh
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -27,7 +27,6 @@ if [ -f /etc/os-release ]; then
             PKG_MAN="dnf"
             ;;
         *)
-            # Fallback check using ID_LIKE for derivatives (e.g., elementaryOS)
             if echo "${ID_LIKE:-}" | grep -qi "debian"; then DISTRO="debian"; PKG_MAN="apt";
             elif echo "${ID_LIKE:-}" | grep -qi "arch"; then DISTRO="arch"; PKG_MAN="pacman";
             elif echo "${ID_LIKE:-}" | grep -qi "fedora"; then DISTRO="fedora"; PKG_MAN="dnf";
@@ -37,25 +36,36 @@ if [ -f /etc/os-release ]; then
 fi
 
 ########################
+# Hardware Profile Detection (Laptop vs Desktop)
+########################
+HW_MODE="desktop"
+# Check for presence of a battery to classify as laptop
+if [ -d /sys/class/power_supply ] && ls /sys/class/power_supply/ | grep -qiE 'bat|pmmu'; then
+    HW_MODE="laptop"
+fi
+
+########################
 # Localization (UI Strings & Messages)
 ########################
-# Initial automatic language detection based on environment
 SYS_LANG=${LANG[-2]:-en}
 export LANG_MODE=$([[ "$SYS_LANG" == "tr" ]] && echo "tr" || echo "en")
 
-# Dictionary containing all localized strings for the user interface
 msg() {
     local key="$1"
     case "$LANG_MODE" in
         tr)
             case "$key" in
-                title) echo "🌌 MelihOS Hyprland Yükleyici v10.1 (Multi-Distro) — Melih Yenen" ;;
+                title) echo "🌌 MelihOS Hyprland Yükleyici v11 (Adaptive) — Melih Yenen" ;;
                 init_sys) echo "🧠 Akıllı yapılandırma sistemi ve optimizasyonlar başlatılıyor..." ;;
                 log_file) echo "📜 Log dosyası" ;;
                 lang_sel_title) echo "Language / Dil Seçimi:" ;;
                 lang_sel_prompt) echo "Select language / Dil seçin [Mevcut: $LANG_MODE]" ;;
                 distro_detect) echo "🐧 Algılanan Dağıtım Ailesi" ;;
                 distro_err) echo "❌ Desteklenmeyen dağıtım! Bu betik Arch, Debian/Ubuntu ve Fedora destekler." ;;
+                hw_detect_title) echo "💻 Donanım Profili Seçimi:" ;;
+                hw_detect_auto) echo "🤖 Sistem tarafından algılanan varsayılan mod" ;;
+                hw_prompt) echo "Donanım modunu seçin (1-Laptop, 2-Desktop)" ;;
+                hw_selected) echo "🚀 Aktif Edilen Donanım Modu" ;;
                 update_sys) echo "🔄 Sistem depoları güncelleniyor..." ;;
                 install_yay) echo "AUR Yardımcısı (yay) bulunamadı. Kuruluyor..." ;;
                 yay_success) echo "yay başarıyla kuruldu!" ;;
@@ -81,7 +91,7 @@ msg() {
                 sddm_prompt) echo "SDDM Giriş Yöneticisini sistem servisi olarak etkinleştirmek ister misiniz?" ;;
                 sddm_warn) echo "SDDM zaten aktif veya şu an etkinleştirilemedi." ;;
                 audio_msg) echo "🔊 Ses servisleri kullanıcı düzeyinde yapılandırılıyor..." ;;
-                final_success) echo "✨ Hyprland v10.1 (Multi-Distro) kurulumu başarıyla tamamlandı hocam!" ;;
+                final_success) echo "✨ Hyprland v11 (Hardware Adaptive) kurulumu başarıyla tamamlandı hocam!" ;;
                 final_reboot) echo "💡 Değişikliklerin tam oturması için bilgisayarı yeniden başlatmanı öneririm." ;;
                 final_binds) echo "🔎 Kısayol Hatırlatıcı:" ;;
                 bind_term) echo "➔  [SUPER + Return]  -> Terminal (Kitty)" ;;
@@ -101,13 +111,17 @@ msg() {
             ;;
         en|*)
             case "$key" in
-                title) echo "🌌 MelihOS Hyprland Installer v10.1 (Multi-Distro) — Designed by Melih Yenen" ;;
+                title) echo "🌌 MelihOS Hyprland Installer v11 (Adaptive) — Designed by Melih Yenen" ;;
                 init_sys) echo "🧠 Smart configuration system and optimizations starting..." ;;
                 log_file) echo "📜 Log file" ;;
                 lang_sel_title) echo "Language Selection:" ;;
                 lang_sel_prompt) echo "Select language [Current: $LANG_MODE]" ;;
                 distro_detect) echo "🐧 Detected Distro Family" ;;
                 distro_err) echo "❌ Unsupported distribution! This script supports Arch, Debian/Ubuntu, and Fedora." ;;
+                hw_detect_title) echo "💻 Hardware Profile Selection:" ;;
+                hw_detect_auto) echo "🤖 Default mode detected by system" ;;
+                hw_prompt) echo "Select hardware mode (1-Laptop, 2-Desktop)" ;;
+                hw_selected) echo "🚀 Activated Hardware Mode" ;;
                 update_sys) echo "🔄 Updating package repositories..." ;;
                 install_yay) echo "AUR Helper (yay) not found. Installing..." ;;
                 yay_success) echo "yay installed successfully!" ;;
@@ -133,7 +147,7 @@ msg() {
                 sddm_prompt) echo "Do you want to enable SDDM Login Manager as a system service?" ;;
                 sddm_warn) echo "SDDM is already active or could not be enabled right now." ;;
                 audio_msg) echo "🔊 Configuring audio services at user level..." ;;
-                final_success) echo "✨ Hyprland v10.1 (Multi-Distro) installation completed successfully!" ;;
+                final_success) echo "✨ Hyprland v11 (Hardware Adaptive) installation completed successfully!" ;;
                 final_reboot) echo "💡 I recommend rebooting your system for changes to take full effect." ;;
                 final_binds) echo "🔎 Keybindings Reminder:" ;;
                 bind_term) echo "➔  [SUPER + Return]  -> Terminal (Kitty)" ;;
@@ -157,7 +171,7 @@ msg() {
 ########################
 # Logging and Color Definitions
 ########################
-LOG_FILE="$HOME/hyprland_setup_v10_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="$HOME/hyprland_setup_v11_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 NC='\033[0m'
@@ -184,19 +198,28 @@ echo -e "${CYAN}$(msg title)${NC}"
 log_info "$(msg init_sys)"
 log_info "$(msg log_file): $LOG_FILE"
 
-# Stop script execution if distro is not recognized
 if [ "$DISTRO" == "unknown" ]; then
     log_error "$(msg distro_err)"
     exit 1
 fi
 log_success "$(msg distro_detect): ${DISTRO^^} ($PKG_MAN)"
 
+# Interactive or Automatic Hardware Profile Selection
+echo ""
+echo -e "${CYAN}$(msg hw_detect_title)${NC}"
+echo -e "💡 $(msg hw_detect_auto): ${GREEN}${HW_MODE^^}${NC}"
+echo "1) Laptop"
+echo "2) Desktop"
+read -rp "$(msg hw_prompt) [1/2]: " hw_input || hw_input=""
+if [[ "$hw_input" == "1" ]]; then HW_MODE="laptop"; fi
+if [[ "$hw_input" == "2" ]]; then HW_MODE="desktop"; fi
+log_success "$(msg hw_selected): ${HW_MODE^^}"
+
 ########################
 # Helper Functions
 ########################
 command_exists() { command -v "$1" &>/dev/null; }
 
-# Abstraction for localized confirmation prompts (Yes/No vs Evet/Hayır)
 confirm() {
   local prompt="$1"
   local yes_no=$([[ "$LANG_MODE" == "tr" ]] && echo "(e/h)" || echo "(y/n)")
@@ -213,43 +236,46 @@ safe_mkdir() {
   chmod 700 "$dir" 2>/dev/null || true
 }
 
-# Distro-agnostic package installer function
 install_packages() {
     local pkgs_to_install=("$@")
     if [ ${#pkgs_to_install[@]} -eq 0 ]; then return 0; fi
     
     case "$PKG_MAN" in
         pacman)
-            if command_exists yay; then
-                yay -S --noconfirm "${pkgs_to_install[@]}"
-            else
-                sudo pacman -S --noconfirm "${pkgs_to_install[@]}"
-            fi
-            ;;
+            if command_exists yay; then yay -S --noconfirm "${pkgs_to_install[@]}"
+            else sudo pacman -S --noconfirm "${pkgs_to_install[@]}"; fi ;;
         apt)
             sudo apt-get update -y
-            sudo apt-get install -y "${pkgs_to_install[@]}"
-            ;;
+            sudo apt-get install -y "${pkgs_to_install[@]}" ;;
         dnf)
-            sudo dnf install -y "${pkgs_to_install[@]}"
-            ;;
+            sudo dnf install -y "${pkgs_to_install[@]}" ;;
     esac
 }
 
 ########################
-# Package Name Mapping per Distribution
+# Package Name Mapping per Distribution & Hardware
 ########################
-# Resolves different naming conventions across Arch, Debian/Ubuntu, and Fedora
-if [ "$DISTRO" == "arch" ]; then
-    CORE_LIST=(hyprland waybar mako wofi dolphin kitty brightnessctl pamixer playerctl ttf-jetbrains-mono-nerd power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-wayland qt6-wayland)
-    EXTR_LIST=(grim slurp swappy network-manager-applet blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
-elif [ "$DISTRO" == "debian" ]; then
-    CORE_LIST=(hyprland waybar mako-notifier wofi dolphin kitty brightnessctl pamixer playerctl fonts-font-awesome power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome-1 qt5-wayland qt6-wayland)
-    EXTR_LIST=(grim slurp swappy network-manager-gnome blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
-elif [ "$DISTRO" == "fedora" ]; then
-    CORE_LIST=(hyprland waybar mako wofi dolphin kitty brightnessctl pamixer playerctl jetbrains-mono-fonts power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-qtwayland qt6-qtwayland)
-    EXTR_LIST=(grim slurp swappy network-manager-applet blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
+# Base package definitions
+ARCH_CORE=(hyprland waybar mako wofi dolphin kitty playerctl swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-wayland qt6-wayland hypridle)
+DEB_CORE=(hyprland waybar mako-notifier wofi dolphin kitty playerctl swww hyprlock pipewire wireplumber pavucontrol polkit-gnome-1 qt5-wayland qt6-wayland hypridle)
+FED_CORE=(hyprland waybar mako wofi dolphin kitty playerctl swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-qtwayland qt6-qtwayland hypridle)
+
+# Add laptop specific utilities if applicable
+if [ "$HW_MODE" == "laptop" ]; then
+    ARCH_CORE+=(brightnessctl pamixer ttf-jetbrains-mono-nerd power-profiles-daemon)
+    DEB_CORE+=(brightnessctl pamixer fonts-font-awesome power-profiles-daemon)
+    FED_CORE+=(brightnessctl pamixer jetbrains-mono-fonts power-profiles-daemon)
+else
+    ARCH_CORE+=(pamixer ttf-jetbrains-mono-nerd)
+    DEB_CORE+=(pamixer fonts-font-awesome)
+    FED_CORE+=(pamixer jetbrains-mono-fonts)
 fi
+
+EXTR_LIST=(grim slurp swappy network-manager-applet blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
+
+if [ "$DISTRO" == "arch" ]; then CORE_LIST=("${ARCH_CORE[@]}");
+elif [ "$DISTRO" == "debian" ]; then CORE_LIST=("${DEB_CORE[@]}");
+elif [ "$DISTRO" == "fedora" ]; then CORE_LIST=("${FED_CORE[@]}"); fi
 
 ########################
 # AUR Helper Installation (Arch Specific)
@@ -270,7 +296,6 @@ fi
 log_info "$(msg chk_pkgs)"
 to_install=()
 for pkg in "${CORE_LIST[@]}"; do
-  # Cross-distro package presence verification query
   if { [ "$PKG_MAN" == "pacman" ] && ! pacman -Qi "$pkg" &>/dev/null; } || \
      { [ "$PKG_MAN" == "apt" ] && ! dpkg -s "$pkg" &>/dev/null; } || \
      { [ "$PKG_MAN" == "dnf" ] && ! rpm -q "$pkg" &>/dev/null; }; then
@@ -299,9 +324,9 @@ if [[ "$GPU_TYPE" == "nvidia" ]]; then
   if [ "$DISTRO" == "arch" ] && ! pacman -Qi nvidia &>/dev/null; then
     sudo pacman -S --noconfirm nvidia nvidia-utils nvidia-settings egl-wayland
   elif [ "$DISTRO" == "debian" ]; then
-    sudo apt-get install -y nvidia-driver-bin nvidia-visual-profiler || log_warn "NVIDIA drivers couldn't be auto-installed. Please check non-free repos."
+    sudo apt-get install -y nvidia-driver-bin nvidia-visual-profiler || log_warn "NVIDIA drivers couldn't be auto-installed."
   elif [ "$DISTRO" == "fedora" ]; then
-    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda || log_warn "NVIDIA drivers require RPM Fusion repo on Fedora."
+    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda || log_warn "NVIDIA drivers require RPM Fusion."
   fi
   log_warn "$(msg nv_grub)"
 fi
@@ -326,10 +351,10 @@ log_success "$(msg theme_selected): $THEME_NAME"
 ########################
 # Config Directories & Automated Backups
 ########################
-CONFIG_DIRS=(hypr waybar mako wofi local/bin hyprlock)
+CONFIG_DIRS=(hypr waybar mako wofi local/bin hyprlock hypridle)
 for dir in "${CONFIG_DIRS[@]}"; do safe_mkdir "$HOME/.config/$dir"; done
 
-for dir in hypr waybar mako wofi hyprlock; do
+for dir in hypr waybar mako wofi hyprlock hypridle; do
   if [ -d "$HOME/.config/$dir" ] && [ "$(ls -A "$HOME/.config/$dir")" ]; then
     backup="$HOME/.config/${dir}_backup_$(date +%Y%m%d_%H%M%S)"
     cp -r "$HOME/.config/$dir" "$backup"
@@ -384,7 +409,11 @@ NV
 input {
     kb_layout = $( [[ "$LANG_MODE" == "tr" ]] && echo "tr" || echo "us" )
     follow_mouse = 1
-    touchpad { natural_scroll = yes; tap-to-click = yes; scroll_factor = 0.6; }
+    touchpad {
+        natural_scroll = $( [[ "$HW_MODE" == "laptop" ]] && echo "yes" || echo "no" )
+        tap-to-click = $( [[ "$HW_MODE" == "laptop" ]] && echo "yes" || echo "no" )
+        scroll_factor = 0.6
+    }
 }
 
 general {
@@ -427,18 +456,41 @@ bind = SUPER, right, movefocus, r
 bind = SUPER, up, movefocus, u
 bind = SUPER, down, movefocus, d
 
+$( [[ "$HW_MODE" == "laptop" ]] && cat <<'LAPTOP_BINDS'
 binde = , XF86MonBrightnessUp, exec, brightnessctl set +5%
 binde = , XF86MonBrightnessDown, exec, brightnessctl set 5%-
+LAPTOP_BINDS
+)
 binde = , XF86AudioRaiseVolume, exec, pamixer -i 5
 binde = , XF86AudioLowerVolume, exec, pamixer -d 5
 bind = , XF86AudioMute, exec, pamixer -t
 
 exec-once = swww-daemon || swww init
 $( [[ -n "$WALLPAPER" && -f "$WALLPAPER" ]] && echo "exec-once = swww img \"$WALLPAPER\" --transition-type fade" )
-exec-once = waybar & mako & nm-applet --indicator & blueman-applet &
+exec-once = waybar & mako & nm-applet --indicator & blueman-applet & hypridle &
 EOF
 
 log_success "$(msg write_conf) -> $HYPR_CONF"
+
+########################
+# Hypridle Configuration (Hardware Aware Lid/Idle Events)
+########################
+HYPRIDLE_CONF="$HOME/.config/hypridle/hypridle.conf"
+cat > "$HYPRIDLE_CONF" <<EOF
+listener {
+    timeout = 600                                 # 10 minutes
+    on-timeout = hyprlock                         # lock screen
+}
+
+$( [[ "$HW_MODE" == "laptop" ]] && cat <<'LID_EVENT'
+listener {
+    timeout = 10
+    on-timeout = systemctl localectl               # dummy command placeholder
+    on-triggered = hyprlock                        # locks when lid closes via systemd handle
+}
+LID_EVENT
+)
+EOF
 
 ########################
 # Powermenu Script & Hyprlock Configuration Generation
@@ -473,10 +525,17 @@ log_success "$(msg lock_msg) -> $HYPRLOCK_CONF"
 # Waybar Structural and Style Configurations
 ########################
 WAYBAR_CONF_DIR="$HOME/.config/waybar"
+
+# Adaptive modules selection for Waybar depending on Hardware Mode
+RIGHT_MODULES='["cpu", "memory", "pulseaudio", "battery", "network", "tray"]'
+if [ "$HW_MODE" == "desktop" ]; then
+    RIGHT_MODULES='["cpu", "memory", "pulseaudio", "network", "tray"]'
+fi
+
 cat > "$WAYBAR_CONF_DIR/config" <<EOF
 {
     "layer": "top", "position": "top", "mod": "dock", "exclusive": true, "height": 30,
-    "modules-left": ["hyprland/workspaces", "hyprland/mode"], "modules-center": ["clock"], "modules-right": ["cpu", "memory", "pulseaudio", "battery", "network", "tray"],
+    "modules-left": ["hyprland/workspaces", "hyprland/mode"], "modules-center": ["clock"], "modules-right": $RIGHT_MODULES,
     "hyprland/workspaces": { "disable-scroll": true, "all-outputs": true, "on-click": "activate" },
     "clock": { "format": "🕒 {:%H:%M - %A, %d %B}" },
     "cpu": { "format": "  {usage}%" }, "memory": { "format": "  {used:0.1f}G" },
