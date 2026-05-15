@@ -1,12 +1,12 @@
 #!/bin/bash
-# Hyprland Full Setup v10 (Melih Edition - Multi-Distro & Pure Global)
-# Hazırlayan: Melih Yenen (MelihOS) & AI Geliştirici Ortağı
-# Kullanım: chmod +x hypr_v10.sh && ./hypr_v10.sh
+# Hyprland Full Setup v10.1 (Melih Edition - Multi-Distro & Pure Global)
+# Developer: Melih Yenen (MelihOS) & AI Development Partner
+# Usage: chmod +x hypr_v10.sh && ./hypr_v10.sh
 set -euo pipefail
 IFS=$'\n\t'
 
 ########################
-# Dağıtım (Distro) Algılama ve Yapılandırma
+# Distro Detection and Configuration
 ########################
 DISTRO="unknown"
 PKG_MAN="unknown"
@@ -27,7 +27,7 @@ if [ -f /etc/os-release ]; then
             PKG_MAN="dnf"
             ;;
         *)
-            # ID_LIKE kontrolü (Örn: ubuntu tabanlı elementryOS için)
+            # Fallback check using ID_LIKE for derivatives (e.g., elementaryOS)
             if echo "${ID_LIKE:-}" | grep -qi "debian"; then DISTRO="debian"; PKG_MAN="apt";
             elif echo "${ID_LIKE:-}" | grep -qi "arch"; then DISTRO="arch"; PKG_MAN="pacman";
             elif echo "${ID_LIKE:-}" | grep -qi "fedora"; then DISTRO="fedora"; PKG_MAN="dnf";
@@ -37,17 +37,19 @@ if [ -f /etc/os-release ]; then
 fi
 
 ########################
-# Dil ve Yerelleştirme (Localization)
+# Localization (UI Strings & Messages)
 ########################
+# Initial automatic language detection based on environment
 SYS_LANG=${LANG[-2]:-en}
 export LANG_MODE=$([[ "$SYS_LANG" == "tr" ]] && echo "tr" || echo "en")
 
+# Dictionary containing all localized strings for the user interface
 msg() {
     local key="$1"
     case "$LANG_MODE" in
         tr)
             case "$key" in
-                title) echo "🌌 MelihOS Hyprland Yükleyici v10 (Multi-Distro) — Melih Yenen" ;;
+                title) echo "🌌 MelihOS Hyprland Yükleyici v10.1 (Multi-Distro) — Melih Yenen" ;;
                 init_sys) echo "🧠 Akıllı yapılandırma sistemi ve optimizasyonlar başlatılıyor..." ;;
                 log_file) echo "📜 Log dosyası" ;;
                 lang_sel_title) echo "Language / Dil Seçimi:" ;;
@@ -79,7 +81,7 @@ msg() {
                 sddm_prompt) echo "SDDM Giriş Yöneticisini sistem servisi olarak etkinleştirmek ister misiniz?" ;;
                 sddm_warn) echo "SDDM zaten aktif veya şu an etkinleştirilemedi." ;;
                 audio_msg) echo "🔊 Ses servisleri kullanıcı düzeyinde yapılandırılıyor..." ;;
-                final_success) echo "✨ Hyprland v10 (Multi-Distro) kurulumu başarıyla tamamlandı hocam!" ;;
+                final_success) echo "✨ Hyprland v10.1 (Multi-Distro) kurulumu başarıyla tamamlandı hocam!" ;;
                 final_reboot) echo "💡 Değişikliklerin tam oturması için bilgisayarı yeniden başlatmanı öneririm." ;;
                 final_binds) echo "🔎 Kısayol Hatırlatıcı:" ;;
                 bind_term) echo "➔  [SUPER + Return]  -> Terminal (Kitty)" ;;
@@ -99,7 +101,7 @@ msg() {
             ;;
         en|*)
             case "$key" in
-                title) echo "🌌 MelihOS Hyprland Installer v10 (Multi-Distro) — Designed by Melih Yenen" ;;
+                title) echo "🌌 MelihOS Hyprland Installer v10.1 (Multi-Distro) — Designed by Melih Yenen" ;;
                 init_sys) echo "🧠 Smart configuration system and optimizations starting..." ;;
                 log_file) echo "📜 Log file" ;;
                 lang_sel_title) echo "Language Selection:" ;;
@@ -131,7 +133,7 @@ msg() {
                 sddm_prompt) echo "Do you want to enable SDDM Login Manager as a system service?" ;;
                 sddm_warn) echo "SDDM is already active or could not be enabled right now." ;;
                 audio_msg) echo "🔊 Configuring audio services at user level..." ;;
-                final_success) echo "✨ Hyprland v10 (Multi-Distro) installation completed successfully!" ;;
+                final_success) echo "✨ Hyprland v10.1 (Multi-Distro) installation completed successfully!" ;;
                 final_reboot) echo "💡 I recommend rebooting your system for changes to take full effect." ;;
                 final_binds) echo "🔎 Keybindings Reminder:" ;;
                 bind_term) echo "➔  [SUPER + Return]  -> Terminal (Kitty)" ;;
@@ -153,7 +155,7 @@ msg() {
 }
 
 ########################
-# Log ve Renk Tanımları
+# Logging and Color Definitions
 ########################
 LOG_FILE="$HOME/hyprland_setup_v10_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -169,7 +171,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Dil Seçimi
+# Interactive Language Choice
 echo -e "${CYAN}Language / Dil Seçimi:${NC}"
 echo "1) English (en)"
 echo "2) Türkçe (tr)"
@@ -182,6 +184,7 @@ echo -e "${CYAN}$(msg title)${NC}"
 log_info "$(msg init_sys)"
 log_info "$(msg log_file): $LOG_FILE"
 
+# Stop script execution if distro is not recognized
 if [ "$DISTRO" == "unknown" ]; then
     log_error "$(msg distro_err)"
     exit 1
@@ -189,10 +192,11 @@ fi
 log_success "$(msg distro_detect): ${DISTRO^^} ($PKG_MAN)"
 
 ########################
-# Yardımcı fonksiyonlar
+# Helper Functions
 ########################
 command_exists() { command -v "$1" &>/dev/null; }
 
+# Abstraction for localized confirmation prompts (Yes/No vs Evet/Hayır)
 confirm() {
   local prompt="$1"
   local yes_no=$([[ "$LANG_MODE" == "tr" ]] && echo "(e/h)" || echo "(y/n)")
@@ -209,7 +213,7 @@ safe_mkdir() {
   chmod 700 "$dir" 2>/dev/null || true
 }
 
-# Soyutlanmış Paket Yöneticisi Fonksiyonu
+# Distro-agnostic package installer function
 install_packages() {
     local pkgs_to_install=("$@")
     if [ ${#pkgs_to_install[@]} -eq 0 ]; then return 0; fi
@@ -233,24 +237,22 @@ install_packages() {
 }
 
 ########################
-# Dağıtıma Göre Paket Eşleştirme (Mapping)
+# Package Name Mapping per Distribution
 ########################
-# Dağıtımlar arasında ismi değişen paketleri burada haritalandırıyoruz
+# Resolves different naming conventions across Arch, Debian/Ubuntu, and Fedora
 if [ "$DISTRO" == "arch" ]; then
     CORE_LIST=(hyprland waybar mako wofi dolphin kitty brightnessctl pamixer playerctl ttf-jetbrains-mono-nerd power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-wayland qt6-wayland)
     EXTR_LIST=(grim slurp swappy network-manager-applet blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
 elif [ "$DISTRO" == "debian" ]; then
-    # Debian/Ubuntu paket isimleri eşleşmesi
     CORE_LIST=(hyprland waybar mako-notifier wofi dolphin kitty brightnessctl pamixer playerctl fonts-font-awesome power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome-1 qt5-wayland qt6-wayland)
     EXTR_LIST=(grim slurp swappy network-manager-gnome blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
 elif [ "$DISTRO" == "fedora" ]; then
-    # Fedora paket isimleri eşleşmesi
     CORE_LIST=(hyprland waybar mako wofi dolphin kitty brightnessctl pamixer playerctl jetbrains-mono-fonts power-profiles-daemon swww hyprlock pipewire wireplumber pavucontrol polkit-gnome qt5-qtwayland qt6-qtwayland)
     EXTR_LIST=(grim slurp swappy network-manager-applet blueman fastfetch xdg-desktop-portal-hyprland btop sddm)
 fi
 
 ########################
-# AUR Yardımcısı Kurulumu (Sadece Arch için)
+# AUR Helper Installation (Arch Specific)
 ########################
 if [ "$DISTRO" == "arch" ] && ! command_exists yay; then
   log_warn "$(msg install_yay)"
@@ -263,12 +265,12 @@ if [ "$DISTRO" == "arch" ] && ! command_exists yay; then
 fi
 
 ########################
-# Ana Paket Kurulum Aşaması
+# Core Package Installation Phase
 ########################
 log_info "$(msg chk_pkgs)"
 to_install=()
 for pkg in "${CORE_LIST[@]}"; do
-  # Dağıtıma göre paket kontrolü sorgusunu esnetiyoruz
+  # Cross-distro package presence verification query
   if { [ "$PKG_MAN" == "pacman" ] && ! pacman -Qi "$pkg" &>/dev/null; } || \
      { [ "$PKG_MAN" == "apt" ] && ! dpkg -s "$pkg" &>/dev/null; } || \
      { [ "$PKG_MAN" == "dnf" ] && ! rpm -q "$pkg" &>/dev/null; }; then
@@ -284,7 +286,7 @@ else
 fi
 
 ########################
-# GPU Algılama & Sürücü Optimizasyonu
+# GPU Detection & Driver Optimization
 ########################
 GPU_TYPE="unknown"
 if lspci | grep -qi nvidia; then GPU_TYPE="nvidia";
@@ -305,7 +307,7 @@ if [[ "$GPU_TYPE" == "nvidia" ]]; then
 fi
 
 ########################
-# Tema Seçimi ve Renk Hafızası
+# Theme Selection & Color Memory Configuration
 ########################
 echo ""
 echo -e "$(msg theme_prompt)"
@@ -322,7 +324,7 @@ esac
 log_success "$(msg theme_selected): $THEME_NAME"
 
 ########################
-# Config dizinleri & yedekleme
+# Config Directories & Automated Backups
 ########################
 CONFIG_DIRS=(hypr waybar mako wofi local/bin hyprlock)
 for dir in "${CONFIG_DIRS[@]}"; do safe_mkdir "$HOME/.config/$dir"; done
@@ -336,7 +338,7 @@ for dir in hypr waybar mako wofi hyprlock; do
 done
 
 ########################
-# WALLPAPER AYARLARI
+# Wallpaper Management Setup
 ########################
 WALLPAPER_DIR="$HOME/Resimler/Wallpapers"
 safe_mkdir "$WALLPAPER_DIR"
@@ -355,7 +357,7 @@ else
 fi
 
 ########################
-# Hyprland Config Yazımı
+# Hyprland Main Configuration Writing
 ########################
 HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
 cat > "$HYPR_CONF" <<EOF
@@ -439,7 +441,7 @@ EOF
 log_success "$(msg write_conf) -> $HYPR_CONF"
 
 ########################
-# Gelişmiş Powermenu & Hyprlock
+# Powermenu Script & Hyprlock Configuration Generation
 ########################
 safe_mkdir "$HOME/.local/bin"
 cat > "$HOME/.local/bin/powermenu.sh" <<EOF
@@ -468,7 +470,7 @@ EOF
 log_success "$(msg lock_msg) -> $HYPRLOCK_CONF"
 
 ########################
-# Waybar Konfigürasyonu
+# Waybar Structural and Style Configurations
 ########################
 WAYBAR_CONF_DIR="$HOME/.config/waybar"
 cat > "$WAYBAR_CONF_DIR/config" <<EOF
@@ -496,7 +498,22 @@ EOF
 log_success "$(msg waybar_msg)"
 
 ########################
-# Ek araçlar kurulumu (Sorularak)
+# Mako Notification Daemon Config
+########################
+MAKO_CONF="$HOME/.config/mako/config"
+cat > "$MAKO_CONF" <<EOF
+max-visible=3
+font=JetBrainsMono Nerd Font 10
+background-color=${BG_COLOR}dd
+text-color=${TEXT_COLOR}
+border-color=${BAR_COLOR}
+border-size=2
+border-radius=8
+default-timeout=5000
+EOF
+
+########################
+# Optional Extra Tools and Components Phase
 ########################
 echo ""
 if confirm "$(msg extra_prompt)"; then
@@ -516,13 +533,13 @@ if confirm "$(msg extra_prompt)"; then
 fi
 
 ########################
-# PipeWire Servisleri
+# PipeWire User-Level Systemd Services Initialization
 ########################
 log_info "$(msg audio_msg)"
 systemctl --user enable --now pipewire.service pipewire-pulse.service wireplumber.service 2>/dev/null || true
 
 ########################
-# Final Kapanış
+# Final Banner and Keybindings Report
 ########################
 echo -e "${CYAN}"
 cat <<'ASCIIART'
